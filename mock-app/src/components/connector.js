@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
-import {Lucid } from 'lucid-cardano'
+import {Blockfrost, Lucid , C } from 'lucid-cardano'
+import "./connector.css"
 // This is the connector component. It is the component that will be used to connect to the wallet under cardano.wallet and interact with the blockchain. 
 
 function Connector() {
@@ -23,15 +24,36 @@ function Connector() {
     const [txId, setTxId] = useState(null);
 
 
-    async function enableWallet() {
-        let api = await window.cardano.broclan.enable();
-        console.log(api)
+    async function enableWallet(walletName) {
+        let api = await window.cardano[walletName].enable();
         if (api){
             setWallet(api)
-            const lucid = await new Lucid()
+            const lucid = await  Lucid.new( new Blockfrost("https://passthrough.broclan.io", "preprod"),  "Preprod")
             lucid.selectWallet(api)
             setLucid(lucid)
+            console.log(await lucid.wallet.getUtxos())
+
         }
+    }
+
+    async function disableWallet() {
+        setBalance(null)
+        setUtxos(null)
+        setCollateral(null)
+        setUsedAddresses(null)
+        setUnusedAddresses(null)
+        setChangeAddress(null)
+        setRewardAddresses(null)
+        setTx(null)
+        setSubmittedTx(null)
+        setSubmittedUnsignedTx(null)
+        setCollateralAddress(null)
+        setScriptRequirements(null)
+        setScript(null)
+        setCompletedTx(null)
+        setTxId(null)
+        setWallet(null)
+        setLucid(null)
     }
 
     async function getBalance() {
@@ -84,8 +106,35 @@ function Connector() {
         console.log(submittedTx)
     }
 
-    async function submitUnsignedTx(tx) {
-        let submittedUnsignedTx = await wallet.submitUnsignedTx(tx);
+    async function submitUnsignedTx() {
+        let script = await wallet.getScript();
+        let scriptRequirements = await wallet.getScriptRequirements();
+       // let address = await lucid.wallet.address();
+        console.log(lucid)
+       // console.log(lucid.wallet)
+       // console.log( await lucid.provider.getUtxos(address))
+        
+       // lucid.selectWalletFrom( { "address":address, "utxos": await lucid.provider.getUtxos(address)} );
+        const tx = await lucid.newTx()
+        
+        tx.payToAddress("addr_test1qpvrwlxha2a3lm8pfav6u4nd2qx5evmqk860fpwzwfs557khyrrgpn6l5dsvvus8hxa5kmh933ppnyqq79ke343t5z0swrdk0e",{lovelace: BigInt(10_000_000)});
+        tx.attachSpendingValidator({ "type": "Native" , "script":script})
+        console.log(scriptRequirements)
+        scriptRequirements.map((requirement) => {
+            if(requirement.code === 1){
+                tx.addSignerKey(requirement.value)
+            }
+            if(requirement.code === 2){
+                tx.validTo( lucid.utils.slotToUnixTime((requirement.value)))
+            }
+            if(requirement.code === 3){
+                tx.validFrom(lucid.utils.slotToUnixTime((requirement.value)))
+            }
+        }
+        )
+        const txComplete = await tx.complete()
+        console.log(txComplete.toString())
+        let submittedUnsignedTx = await wallet.submitUnsignedTx(txComplete.toString());
         setSubmittedUnsignedTx(submittedUnsignedTx)
         console.log(submittedUnsignedTx)
     }
@@ -120,42 +169,48 @@ function Connector() {
         <div className="connector">
             <h1>Connector</h1>
             <p>Wallet: {JSON.stringify(wallet)}</p>
-           {!wallet ?  <button onClick={enableWallet}> Enable BroClan</button> : <button onClick={() =>setWallet(null)}> Disable Wallet</button>}
+           {!wallet ?  
+             <div><button onClick={() => enableWallet("broclan")}> Enable BroClan</button><button onClick={() => enableWallet("nami")}> Enable Nami</button> </div> : <button onClick={disableWallet}> Disable Wallet</button>
+             
+             }
             <br/>
-            {wallet &&<div> <button onClick={getBalance}> Get Balance</button>
+            {wallet &&<div> 
+            <button onClick={getBalance}> Get Balance</button>
             {balance && <p>Balance: {JSON.stringify(balance)}</p>}
+            <br/>
             <button onClick={getUtxos}> Get getUtxos</button>
             {utxos && <p>Utxos: {JSON.stringify(utxos)}</p>}
+            <br/>
             <button onClick={getCollateral}> Get Collateral</button>
             {collateral && <p>Collateral: {JSON.stringify(collateral)}</p>}
-
+            <br/>
             <button onClick={getUsedAddresses}> Get Used Addresses</button>
             {usedAddresses && <p>Used Addresses: {JSON.stringify(usedAddresses)}</p>}
-
+             <br/>
             <button onClick={getUnusedAddresses}> Get Unused Addresses</button>
             {unusedAddresses && <p>Unused Addresses: {JSON.stringify(unusedAddresses)}</p>}
-
+            <br/>
             <button onClick={getChangeAddress}> Get Change Address</button>
             {changeAddress && <p>Change Address: {JSON.stringify(changeAddress)}</p>}
-
+            <br/>
             <button onClick={getRewardAddresses}> Get Reward Addresses</button>
             {rewardAddresses && <p>Reward Addresses: {JSON.stringify(rewardAddresses)}</p>}
-
+            <br/>
             <button onClick={() => submitTx(tx)}> Submit Tx</button>
             {submittedTx && <p>Submitted Tx: {JSON.stringify(submittedTx)}</p>}
-
-            <button onClick={() => submitUnsignedTx(tx)}> Submit Unsigned Tx</button>
+            <br/>
+            <button onClick={() => submitUnsignedTx()}> Submit Unsigned Tx</button>
             {submittedUnsignedTx && <p>Submitted Unsigned Tx: {JSON.stringify(submittedUnsignedTx)}</p>}
-
+            <br/>
             <button onClick={getCollateralAddress}> Get Collateral Address</button>
             {collateralAddress && <p>Collateral Address: {JSON.stringify(collateralAddress)}</p>}
-
+            <br/>
             <button onClick={getScriptRequirements}> Get Script Requirements</button>
             {scriptRequirements && <p>Script Requirements: {JSON.stringify(scriptRequirements)}</p>}
-
+            <br/>
             <button onClick={getScript}> Get Script</button>
             {script && <p>Script: {JSON.stringify(script)}</p>}
-
+            <br/>
             <button onClick={() => getCompletedTx(txId)}> Get Completed Tx</button>
             {completedTx && <p>Completed Tx: {JSON.stringify(completedTx)}</p>}
             </div>

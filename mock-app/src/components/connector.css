@@ -1,0 +1,8 @@
+.connector p {
+    display: block;
+    font-size: 13px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-all; /* added property */
+    margin-bottom: 0.5rem;
+}
