@@ -6,3 +6,12 @@
     word-break: break-all; /* added property */
     margin-bottom: 0.5rem;
 }
+
+
+.apis{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+}
