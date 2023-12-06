@@ -6,6 +6,7 @@ import "./connector.css"
 
 function Connector() {
     const [wallet, setWallet] = useState(null);
+    const [walletError, setWalletError] = useState(null);
     const [balance, setBalance] = useState(null);
     const [utxos, setUtxos] = useState(null);
     const [lucid, setLucid] = useState(null);
@@ -25,16 +26,22 @@ function Connector() {
 
 
     async function enableWallet(walletName) {
-        let api = await window.cardano[walletName].enable();
+        try{
+            console.log(window.cardano)
+        let api = await window.cardano[walletName].enable([130]);
+        console.log(api)
         if (api){
             setWallet(api)
+            setWalletError(null)
             const lucid = await  Lucid.new( new Blockfrost("https://passthrough.broclan.io", "preprod"),  "Preprod")
             lucid.selectWallet(api)
             setLucid(lucid)
             console.log(await lucid.wallet.getUtxos())
-
-        }
+    }}catch(e){
+        console.log(e)
+        setWalletError(e)
     }
+}
 
     async function disableWallet() {
         setBalance(null)
@@ -185,6 +192,7 @@ function Connector() {
         <div className="connector">
             <h1>Connector</h1>
             <p>Wallet: {JSON.stringify(wallet)}</p>
+            {walletError && <p>Wallet Error: {JSON.stringify(walletError)}</p>}
            {!wallet ?  
              <div><button onClick={() => enableWallet("broclan")}> Enable BroClan</button><button onClick={() => enableWallet("nami")}> Enable Nami</button> </div> : <button onClick={disableWallet}> Disable Wallet</button>
              
