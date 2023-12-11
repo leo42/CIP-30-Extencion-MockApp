@@ -1,5 +1,5 @@
 import React from 'react';
-import { useEffect, useState } from 'react';
+import {  useState } from 'react';
 import {Blockfrost, Lucid , C , TxComplete} from 'lucid-cardano'
 import "./connector.css"
 // This is the connector component. It is the component that will be used to connect to the wallet under cardano.wallet and interact with the blockchain. 
@@ -23,7 +23,7 @@ function Connector() {
     const [script, setScript] = useState(null);
     const [completedTx, setCompletedTx] = useState(null);
     const [txId, setTxId] = useState(null);
-
+    const [network, setNetwork] = useState(null);
 
     async function enableWallet(walletName) {
         try{
@@ -44,6 +44,7 @@ function Connector() {
 }
 
     async function disableWallet() {
+        setNetwork(null)
         setBalance(null)
         setUtxos(null)
         setCollateral(null)
@@ -186,6 +187,11 @@ function Connector() {
     }
     }
 
+    async function getNetwork() {
+        let network = await wallet.getNetworkId();
+        setNetwork(network)
+        console.log(network)
+    }
 
 
     return (
@@ -197,7 +203,9 @@ function Connector() {
              <div><button onClick={() => enableWallet("broclan")}> Enable BroClan</button><button onClick={() => enableWallet("nami")}> Enable Nami</button> </div> : <button onClick={disableWallet}> Disable Wallet</button>
              
              }
-            {wallet &&<div className='apis'> 
+            {wallet &&<div className='apis'>
+            <button onClick={getNetwork}> Get network</button> 
+            {network !== null && <p>Network: {JSON.stringify(network)}</p>}
             <button onClick={getBalance}> Get Balance</button>
             {balance && <p>Balance: {JSON.stringify(balance)}</p>}
             <button onClick={getUtxos}> Get getUtxos</button>
