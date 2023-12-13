@@ -28,7 +28,7 @@ function Connector() {
     async function enableWallet(walletName) {
         try{
             console.log(window.cardano)
-        let api = await window.cardano[walletName].enable([130]);
+        let api = await window.cardano[walletName].enable([106]);
         console.log(api)
         if (api){
             setWallet(api)
