@@ -1,9 +1,10 @@
 import React from 'react';
 import {  useState } from 'react';
-import {Maestro, Lucid, Blockfrost} from "@lucid-evolution/lucid";
+import {Data, Lucid, Blockfrost, signData} from "@lucid-evolution/lucid";
 import "./connector.css"
-// import { createCIP141Transaction } from "cip141-lucidevolution";
+import { createCIP106Transaction } from "cip106-lucidevolution";
 // This is the connector component. It is the component that will be used to connect to the wallet under cardano.wallet and interact with the blockchain. 
+
 
 
 function Connector() {
@@ -28,7 +29,7 @@ function Connector() {
     const [secret, setSecret] = useState(null);
     const [network, setNetwork] = useState(null);
     const [extension, setExtension] = useState([]);
-
+    const [redeemer, setRedeemer] = useState(null);
     React.useEffect(() => {
         setExtension(window.cardano.broclan.supportedExtensions)
         const interval = setInterval(() => {
@@ -59,14 +60,14 @@ function Connector() {
                 
                 console.log(await provider.getProtocolParameters())
                 // Initialize Lucid with the provider
-                const lucid = await Lucid(provider, { network: "Preprod" });
+                const lucid = await Lucid(provider,"Preprod" );
 
 
                 // Select the wallet
                 lucid.selectWallet.fromAPI(api);
                 setLucid(lucid);
 
-                console.log(await lucid.wallet.getUtxos());
+                console.log(await lucid.config().network.network);
             }
         } catch (e) {
             console.log(e);
@@ -111,15 +112,25 @@ function Connector() {
 
     }
 
-    async function getSecret(secretId) {
-        let secret = await wallet.cip141.getSecret(secretId)
+    async function getSecret() {
+        const secretId = 0
+        let secret = await wallet.cip106.getSecret(secretId)
         setSecret(secret)
         console.log(secret)
+    }
+
+    async function signRedeemer() {
+        const redeemerId = 0
+        const premitive = "SPP"
+        let redeemer = await wallet.cip106.signRedeemer(redeemerId, premitive)
+        setRedeemer(redeemer)
+        console.log(redeemer)
     }
 
 
     async function getCollateral() {
         let collateral = await wallet.getCollateral();
+
         setCollateral(collateral)
         console.log(collateral)
 
@@ -164,35 +175,26 @@ function Connector() {
     }
 
     async function submitUnsignedTx() {
-        let script = await wallet.cip141.getScript();
-        let scriptRequirements = await wallet.cip141.getScriptRequirements();
+        let scriptRequirements = await wallet.cip106.getScriptRequirements();
+        let utxos = await lucid.wallet().getUtxos()
+        console.log(utxos)
        // let address = await lucid.wallet.address();
         console.log(lucid)
        // console.log(lucid.wallet)
        // console.log( await lucid.provider.getUtxos(address))
         
        // lucid.selectWalletFrom( { "address":address, "utxos": await lucid.provider.getUtxos(address)} );
-        const tx = await lucid.newTx()
-        
-        tx.payToAddress("addr_test1qpvrwlxha2a3lm8pfav6u4nd2qx5evmqk860fpwzwfs557khyrrgpn6l5dsvvus8hxa5kmh933ppnyqq79ke343t5z0swrdk0e",{lovelace: BigInt(10_000_000)});
-        tx.attachSpendingValidator({ "type": "Native" , "script":script})
+        const tx = await createCIP106Transaction(lucid,scriptRequirements)
+        console.log(tx)
+        tx.pay.ToAddress("addr_test1qprmzc9rzsg42nxeezzjsq9w87z7nhpjjdtsgqejpednenw34j8e8frxm3v4e9t5u5sh7uwadw5kfhqvseg3fpwequyqzkw09p",{lovelace: BigInt(10_000_000)});
+        console.log(tx)
+        tx.collectFrom(utxos, Data.void())
         console.log(scriptRequirements)
-        scriptRequirements.map((requirement) => {
-            if(requirement.code === 1){
-                tx.addSignerKey(requirement.value)
-            }
-            if(requirement.code === 2){
-                tx.validTo( lucid.utils.slotToUnixTime((requirement.value)))
-            }
-            if(requirement.code === 3){
-                tx.validFrom(lucid.utils.slotToUnixTime((requirement.value)))
-            }
-        }
-        )
-        const txComplete = await tx.complete()
-        console.log(txComplete.toString())
+        const txComplete = await tx.complete({setCollateral : 4_000_000n })
+        console.log(txComplete.toCBOR())
         try{
-            let submittedUnsignedTx = await wallet.cip141.submitUnsignedTx(txComplete.toString());
+            let submittedUnsignedTx = await wallet.cip106.submitUnsignedTx(txComplete.toCBOR());
+            console.log(submittedUnsignedTx)
             setSubmittedUnsignedTx(submittedUnsignedTx)
             console.log(submittedUnsignedTx)
         }catch (e){
@@ -203,13 +205,13 @@ function Connector() {
 
 
     async function getScriptRequirements() {
-        let scriptRequirements = await wallet.cip141.getScriptRequirements();
+        let scriptRequirements = await wallet.cip106.getScriptRequirements();
         setScriptRequirements(scriptRequirements)
         console.log(scriptRequirements)
     }
 
     async function getScript() {
-        let script = await wallet.cip141.getScript();
+        let script = await wallet.cip106.getScript();
         setScript(script)
         console.log(script)
     }
@@ -217,7 +219,7 @@ function Connector() {
 
     async function getCompletedTx() {
     try{
-        let completedTx = await wallet.cip141.getCompletedTx(submittedUnsignedTx);
+        let completedTx = await wallet.cip106.getCompletedTx(submittedUnsignedTx);
         setCompletedTx(completedTx)
         console.log(completedTx)
     }catch(e){
@@ -235,7 +237,7 @@ function Connector() {
 
     return (
         <div className="connector">
-            <h1>CIP141 Connector</h1>
+            <h1>CIP106 Connector</h1>
             <p>Wallet: {JSON.stringify(wallet)}</p>
             <p>Extension: {JSON.stringify(extension)}</p>
             {walletError && <p>Wallet Error: {JSON.stringify(walletError)}</p>}
@@ -265,7 +267,11 @@ function Connector() {
             {script && <p>Script: {JSON.stringify(script)}</p>}
             <button onClick={getSecret}> Get Secret</button>
             {secret && <p>Secret: {JSON.stringify(secret)}</p>}
+            <button onClick={signRedeemer}> Sign Redeemer</button>
+            {redeemer && <p>Redeemer: {JSON.stringify(redeemer)}</p>}
             <button onClick={() => submitUnsignedTx()}> Submit Unsigned Tx</button>
+
+
             {submittedUnsignedTx && <div><p>Submitted Unsigned Tx: {JSON.stringify(submittedUnsignedTx)}</p>
             <button onClick={() => getCompletedTx()}> Get Completed Tx</button>
             {completedTx && <div><p>Completed Tx: {JSON.stringify(completedTx)}</p>
