@@ -2,7 +2,7 @@ import React from 'react';
 import {  useState } from 'react';
 import {Data, Lucid, Blockfrost, signData} from "@lucid-evolution/lucid";
 import "./connector.css"
-import { createCIP106Transaction } from "cip106-lucidevolution";
+import { createCIP141Transaction } from "cip141-lucidevolution";
 // This is the connector component. It is the component that will be used to connect to the wallet under cardano.wallet and interact with the blockchain. 
 
 
@@ -45,7 +45,7 @@ function Connector() {
     async function enableWallet(walletName) {
         try {
             console.log(window.cardano);
-            let api = await window.cardano[walletName].enable([106]);
+            let api = await window.cardano[walletName].enable([141]);
             console.log(api);
             if (api) {
                 console.log("LEOOOOOO")
@@ -114,7 +114,7 @@ function Connector() {
 
     async function getSecret() {
         const secretId = 0
-        let secret = await wallet.cip106.getSecret(secretId)
+        let secret = await wallet.cip141.getSecret(secretId)
         setSecret(secret)
         console.log(secret)
     }
@@ -122,7 +122,7 @@ function Connector() {
     async function signRedeemer() {
         const redeemerId = 0
         const premitive = "SPP"
-        let redeemer = await wallet.cip106.signRedeemer(redeemerId, premitive)
+        let redeemer = await wallet.cip141.signRedeemer(redeemerId, premitive)
         setRedeemer(redeemer)
         console.log(redeemer)
     }
@@ -175,7 +175,7 @@ function Connector() {
     }
 
     async function submitUnsignedTx() {
-        let scriptRequirements = await wallet.cip106.getScriptRequirements();
+        let scriptRequirements = await wallet.cip141.getScriptRequirements();
         let utxos = await lucid.wallet().getUtxos()
         console.log(utxos)
        // let address = await lucid.wallet.address();
@@ -184,7 +184,7 @@ function Connector() {
        // console.log( await lucid.provider.getUtxos(address))
         
        // lucid.selectWalletFrom( { "address":address, "utxos": await lucid.provider.getUtxos(address)} );
-        const tx = await createCIP106Transaction(lucid,scriptRequirements)
+        const tx = await createCIP141Transaction(lucid,scriptRequirements)
         console.log(tx)
         tx.pay.ToAddress("addr_test1qprmzc9rzsg42nxeezzjsq9w87z7nhpjjdtsgqejpednenw34j8e8frxm3v4e9t5u5sh7uwadw5kfhqvseg3fpwequyqzkw09p",{lovelace: BigInt(10_000_000)});
         console.log(tx)
@@ -193,7 +193,7 @@ function Connector() {
         const txComplete = await tx.complete({setCollateral : 4_000_000n })
         console.log(txComplete.toCBOR())
         try{
-            let submittedUnsignedTx = await wallet.cip106.submitUnsignedTx(txComplete.toCBOR());
+            let submittedUnsignedTx = await wallet.cip141.submitUnsignedTx(txComplete.toCBOR());
             console.log(submittedUnsignedTx)
             setSubmittedUnsignedTx(submittedUnsignedTx)
             console.log(submittedUnsignedTx)
@@ -205,13 +205,13 @@ function Connector() {
 
 
     async function getScriptRequirements() {
-        let scriptRequirements = await wallet.cip106.getScriptRequirements();
+        let scriptRequirements = await wallet.cip141.getScriptRequirements();
         setScriptRequirements(scriptRequirements)
         console.log(scriptRequirements)
     }
 
     async function getScript() {
-        let script = await wallet.cip106.getScript();
+        let script = await wallet.cip141.getScript();
         setScript(script)
         console.log(script)
     }
@@ -219,7 +219,7 @@ function Connector() {
 
     async function getCompletedTx() {
     try{
-        let completedTx = await wallet.cip106.getCompletedTx(submittedUnsignedTx);
+        let completedTx = await wallet.cip141.getCompletedTx(submittedUnsignedTx);
         setCompletedTx(completedTx)
         console.log(completedTx)
     }catch(e){
@@ -237,7 +237,7 @@ function Connector() {
 
     return (
         <div className="connector">
-            <h1>CIP106 Connector</h1>
+            <h1>CIP141 Connector</h1>
             <p>Wallet: {JSON.stringify(wallet)}</p>
             <p>Extension: {JSON.stringify(extension)}</p>
             {walletError && <p>Wallet Error: {JSON.stringify(walletError)}</p>}
